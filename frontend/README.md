@@ -1,6 +1,6 @@
 # System Design Studio
 
-Create the System Design Interview Platform MVP described by the user. Build a polished browser-based clickable application covering the interviewer dashboard, create-session form, candidate lobby, live shared system-design canvas, and ended-session review. Implement the key UI flows and role/permission states (share/revoke link, participant presence, candidate editing lock, start/end, reconnect indicator, autosave feedback). Use a robust system-design canvas experience with palette components, connectors, notes/text, drawing affordances, pan/zoom and selection interactions as feasible. Centralize every backend call in a single services layer and provide a mock implementation so the app works fully without a real backend. Add meaningful tests for core service and workflow behavior. Favor desktop-first professional UX, accessible controls, responsive support UI, and seeded demo data.
+See the [product specification](../docs/spec.md) for the application requirements.
 
 This project was built with [Lovable](https://lovable.dev).
 
