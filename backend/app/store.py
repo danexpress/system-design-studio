@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from threading import RLock
 from uuid import uuid4
 
+from sqlalchemy import delete, select
+
+from .database import Database, SessionRecord
 from .models import (
     CanvasDoc,
     CanvasEdge,
@@ -62,35 +65,47 @@ def empty_feedback() -> Feedback:
 
 
 class SessionStore:
-    def __init__(self) -> None:
-        self._lock = RLock()
-        self._sessions: dict[str, Session] = {}
+    def __init__(self, database: Database) -> None:
+        self._database = database
+        self._subscriber_lock = RLock()
         self._subscribers: dict[str, set[asyncio.Queue[Session]]] = {}
-        self.reset()
+        self.seed_if_empty()
+
+    def seed_if_empty(self) -> None:
+        with self._database.session() as database_session:
+            if database_session.scalar(select(SessionRecord.id).limit(1)) is not None:
+                return
+            database_session.add_all(
+                [self._record(session) for session in seed_sessions()]
+            )
 
     def reset(self) -> None:
-        with self._lock:
-            seeded = seed_sessions()
-            self._sessions = {session.id: session for session in seeded}
+        with self._database.session() as database_session:
+            database_session.execute(delete(SessionRecord))
+            database_session.add_all(
+                [self._record(session) for session in seed_sessions()]
+            )
+        with self._subscriber_lock:
             self._subscribers = {}
 
     def list_sessions(self) -> list[Session]:
-        with self._lock:
-            return [
-                session.model_copy(deep=True) for session in self._sessions.values()
-            ]
+        with self._database.session() as database_session:
+            records = database_session.scalars(select(SessionRecord)).all()
+            return [self._domain(record) for record in records]
 
     def get(self, session_id: str) -> Session:
-        with self._lock:
-            return self._find(session_id).model_copy(deep=True)
+        with self._database.session() as database_session:
+            return self._domain(self._find(database_session, session_id))
 
     def get_by_token(self, token: str) -> Session:
-        with self._lock:
+        with self._database.session() as database_session:
+            records = database_session.scalars(select(SessionRecord)).all()
             session = next(
                 (
-                    item
-                    for item in self._sessions.values()
-                    if item.share and item.share.token == token
+                    domain
+                    for record in records
+                    if (domain := self._domain(record)).share
+                    and domain.share.token == token
                 ),
                 None,
             )
@@ -98,7 +113,7 @@ class SessionStore:
                 raise NotFoundError("Invite link is not valid")
             if session.share and session.share.revoked_at:
                 raise ForbiddenError("This invite link has been revoked")
-            return session.model_copy(deep=True)
+            return session
 
     def create(self, data: CreateSessionInput, interviewer_name: str) -> Session:
         created = now()
@@ -123,36 +138,35 @@ class SessionStore:
             canvas=empty_canvas(),
             feedback=empty_feedback(),
         )
-        with self._lock:
-            self._sessions = {session.id: session, **self._sessions}
-            return session.model_copy(deep=True)
+        with self._database.session() as database_session:
+            database_session.add(self._record(session))
+        return session
 
     def create_share_link(self, session_id: str) -> Session:
-        with self._lock:
-            session = self._find(session_id)
+        def update(session: Session) -> None:
             session.share = ShareLink(
                 token=uid("shr"), created_at=now(), revoked_at=None
             )
-            return self._commit(session)
+
+        return self._mutate(session_id, update)
 
     def revoke_share_link(self, session_id: str) -> Session:
-        with self._lock:
-            session = self._find(session_id)
+        def update(session: Session) -> None:
             if session.share is None:
                 raise NotFoundError("No share link to revoke")
             session.share.revoked_at = now()
-            return self._commit(session)
+
+        return self._mutate(session_id, update)
 
     def join(self, session_id: str, data: JoinSessionInput) -> Session:
-        with self._lock:
-            session = self._find(session_id)
+        def update(session: Session) -> None:
             if session.status is SessionStatus.ENDED:
                 raise ForbiddenError("This session has already ended")
             existing = next(
                 (
-                    p
-                    for p in session.participants
-                    if p.name == data.name and p.role is data.role
+                    participant
+                    for participant in session.participants
+                    if participant.name == data.name and participant.role is data.role
                 ),
                 None,
             )
@@ -165,40 +179,39 @@ class SessionStore:
                         data.name, data.role, True, len(session.participants)
                     )
                 )
-            return self._commit(session)
+
+        return self._mutate(session_id, update)
 
     def leave(self, session_id: str, participant_id: str) -> Session:
-        with self._lock:
-            session = self._find(session_id)
+        def update(session: Session) -> None:
             participant = next(
-                (p for p in session.participants if p.id == participant_id), None
+                (item for item in session.participants if item.id == participant_id),
+                None,
             )
             if participant is None:
                 raise NotFoundError(f"Participant {participant_id} not found")
             participant.online = False
             participant.last_seen = now()
-            return self._commit(session)
+
+        return self._mutate(session_id, update)
 
     def set_candidate_editing(self, session_id: str, can_edit: bool) -> Session:
-        with self._lock:
-            session = self._find(session_id)
-            session.candidate_can_edit = can_edit
-            return self._commit(session)
+        return self._mutate(
+            session_id, lambda session: setattr(session, "candidate_can_edit", can_edit)
+        )
 
     def start(self, session_id: str) -> Session:
-        with self._lock:
-            session = self._find(session_id)
+        def update(session: Session) -> None:
             if session.status is SessionStatus.ENDED:
                 raise ForbiddenError("Cannot start an ended session")
-            if session.status is SessionStatus.LIVE:
-                return session.model_copy(deep=True)
-            session.status = SessionStatus.LIVE
-            session.started_at = now()
-            return self._commit(session)
+            if session.status is SessionStatus.SCHEDULED:
+                session.status = SessionStatus.LIVE
+                session.started_at = now()
+
+        return self._mutate(session_id, update)
 
     def end(self, session_id: str) -> Session:
-        with self._lock:
-            session = self._find(session_id)
+        def update(session: Session) -> None:
             if session.status is not SessionStatus.LIVE:
                 raise ForbiddenError("Only a live session can be ended")
             timestamp = now()
@@ -209,11 +222,11 @@ class SessionStore:
                 participant.online = False
             if session.share and session.share.revoked_at is None:
                 session.share.revoked_at = timestamp
-            return self._commit(session)
+
+        return self._mutate(session_id, update)
 
     def save_canvas(self, session_id: str, canvas: CanvasDoc, actor: Role) -> Session:
-        with self._lock:
-            session = self._find(session_id)
+        def update(session: Session) -> None:
             if session.status is SessionStatus.ENDED:
                 raise ForbiddenError("Session has ended; canvas is read-only")
             if actor is Role.CANDIDATE and not session.candidate_can_edit:
@@ -222,44 +235,66 @@ class SessionStore:
             saved.revision = session.canvas.revision + 1
             saved.updated_at = now()
             session.canvas = saved
-            return self._commit(session)
+
+        return self._mutate(session_id, update)
 
     def save_feedback(self, session_id: str, data: SaveFeedbackInput) -> Session:
-        with self._lock:
-            session = self._find(session_id)
+        def update(session: Session) -> None:
             session.feedback = Feedback(**data.model_dump(), updated_at=now())
-            return self._commit(session)
+
+        return self._mutate(session_id, update)
 
     @contextmanager
     def subscribe(self, session_id: str) -> Iterator[asyncio.Queue[Session]]:
         self.get(session_id)
         queue: asyncio.Queue[Session] = asyncio.Queue(maxsize=10)
-        with self._lock:
+        with self._subscriber_lock:
             self._subscribers.setdefault(session_id, set()).add(queue)
         try:
             yield queue
         finally:
-            with self._lock:
+            with self._subscriber_lock:
                 subscribers = self._subscribers.get(session_id)
                 if subscribers:
                     subscribers.discard(queue)
                     if not subscribers:
                         self._subscribers.pop(session_id, None)
 
-    def _find(self, session_id: str) -> Session:
-        session = self._sessions.get(session_id)
-        if session is None:
-            raise NotFoundError(f"Session {session_id} not found")
+    def _mutate(self, session_id: str, update: Callable[[Session], None]) -> Session:
+        with self._database.session() as database_session:
+            record = self._find(database_session, session_id)
+            session = self._domain(record)
+            update(session)
+            record.document = self._document(session)
+        self._publish(session)
         return session
 
-    def _commit(self, session: Session) -> Session:
-        self._sessions[session.id] = session
+    def _publish(self, session: Session) -> None:
         snapshot = session.model_copy(deep=True)
-        for queue in self._subscribers.get(session.id, set()):
-            if queue.full():
-                queue.get_nowait()
-            queue.put_nowait(snapshot.model_copy(deep=True))
-        return snapshot
+        with self._subscriber_lock:
+            for queue in self._subscribers.get(session.id, set()):
+                if queue.full():
+                    queue.get_nowait()
+                queue.put_nowait(snapshot.model_copy(deep=True))
+
+    @staticmethod
+    def _find(database_session, session_id: str) -> SessionRecord:
+        record = database_session.get(SessionRecord, session_id)
+        if record is None:
+            raise NotFoundError(f"Session {session_id} not found")
+        return record
+
+    @staticmethod
+    def _record(session: Session) -> SessionRecord:
+        return SessionRecord(id=session.id, document=SessionStore._document(session))
+
+    @staticmethod
+    def _domain(record: SessionRecord) -> Session:
+        return Session.model_validate(record.document)
+
+    @staticmethod
+    def _document(session: Session) -> dict:
+        return session.model_dump(mode="json", by_alias=True)
 
     @staticmethod
     def _participant(name: str, role: Role, online: bool, index: int) -> Participant:
@@ -296,7 +331,13 @@ def seeded_canvas(timestamp: datetime) -> CanvasDoc:
         h=76,
     )
     database = CanvasNode(
-        id=uid("n"), kind=NodeKind.DATABASE, label="Postgres", x=860, y=220, w=168, h=76
+        id=uid("n"),
+        kind=NodeKind.DATABASE,
+        label="Postgres",
+        x=860,
+        y=220,
+        w=168,
+        h=76,
     )
     return CanvasDoc(
         nodes=[client, gateway, service, database],
@@ -341,8 +382,6 @@ def seeded_canvas(timestamp: datetime) -> CanvasDoc:
 
 def seed_sessions() -> list[Session]:
     timestamp = now()
-    interviewer = SessionStore._participant("Fred Offei", Role.INTERVIEWER, True, 0)
-    candidate = SessionStore._participant("Amara Boateng", Role.CANDIDATE, True, 1)
     live = Session(
         id="s_live_feed",
         title="Design a social feed",
@@ -362,7 +401,10 @@ def seed_sessions() -> list[Session]:
             created_at=timestamp - timedelta(minutes=90),
             revoked_at=None,
         ),
-        participants=[interviewer, candidate],
+        participants=[
+            SessionStore._participant("Fred Offei", Role.INTERVIEWER, True, 0),
+            SessionStore._participant("Amara Boateng", Role.CANDIDATE, True, 1),
+        ],
         canvas=seeded_canvas(timestamp - timedelta(minutes=2)),
         feedback=empty_feedback(),
     )

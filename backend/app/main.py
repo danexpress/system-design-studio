@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .auth import AuthenticationError, AuthorizationError, seeded_auth_service
+from .database import Database
 from .routers import auth, sessions
 from .store import ForbiddenError, NotFoundError, SessionStore
 
@@ -14,7 +15,7 @@ def error_response(status_code: int, message: str) -> JSONResponse:
     return JSONResponse(status_code=status_code, content={"message": message})
 
 
-def create_app() -> FastAPI:
+def create_app(database_url: str | None = None) -> FastAPI:
     application = FastAPI(
         title="System Design Studio API",
         version="1.0.0",
@@ -22,8 +23,11 @@ def create_app() -> FastAPI:
         docs_url="/api/docs",
         redoc_url="/api/redoc",
     )
-    application.state.store = SessionStore()
-    application.state.auth = seeded_auth_service()
+    database = Database(database_url)
+    database.create_schema()
+    application.state.database = database
+    application.state.store = SessionStore(database)
+    application.state.auth = seeded_auth_service(database)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],

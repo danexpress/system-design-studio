@@ -8,7 +8,9 @@ import jwt
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pwdlib import PasswordHash
+from sqlalchemy import select
 
+from .database import Database, UserRecord
 from .models import Role
 
 
@@ -27,37 +29,37 @@ class Principal:
     role: Role
 
 
-@dataclass(frozen=True)
-class User:
-    email: str
-    name: str
-    role: Role
-    password_hash: str
-
-
 class AuthService:
-    def __init__(self, secret: str | None = None) -> None:
+    def __init__(self, database: Database, secret: str | None = None) -> None:
+        self._database = database
         self._secret = secret or os.getenv(
             "JWT_SECRET", "development-only-secret-change-before-production"
         )
         self._algorithm = "HS256"
         self._passwords = PasswordHash.recommended()
-        self._users: dict[str, User] = {}
 
     def add_user(self, email: str, name: str, role: Role, password: str) -> None:
         normalized = email.casefold()
-        self._users[normalized] = User(
-            email=normalized,
-            name=name,
-            role=role,
-            password_hash=self._passwords.hash(password),
-        )
+        with self._database.session() as database_session:
+            if database_session.get(UserRecord, normalized) is not None:
+                return
+            database_session.add(
+                UserRecord(
+                    email=normalized,
+                    name=name,
+                    role=role.value,
+                    password_hash=self._passwords.hash(password),
+                )
+            )
 
     def authenticate(self, email: str, password: str) -> Principal:
-        user = self._users.get(email.casefold())
+        with self._database.session() as database_session:
+            user = database_session.scalar(
+                select(UserRecord).where(UserRecord.email == email.casefold())
+            )
         if user is None or not self._passwords.verify(password, user.password_hash):
             raise AuthenticationError("Invalid email or password")
-        return Principal(email=user.email, name=user.name, role=user.role)
+        return Principal(email=user.email, name=user.name, role=Role(user.role))
 
     def issue_token(
         self, principal: Principal, expires_in: timedelta = timedelta(hours=8)
@@ -109,8 +111,8 @@ def interviewer(principal: Principal = Depends(current_principal)) -> Principal:
     return principal
 
 
-def seeded_auth_service() -> AuthService:
-    service = AuthService()
+def seeded_auth_service(database: Database) -> AuthService:
+    service = AuthService(database)
     service.add_user(
         "interviewer@example.com",
         "Fred Offei",
