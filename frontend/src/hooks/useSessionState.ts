@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type ConnectionState, type Session } from "@/services";
+import { api, type ConnectionState, type Role, type Session } from "@/services";
 
 export type SaveState = "idle" | "saving" | "saved" | "error";
 
-export function useSessionState(sessionId: string) {
+export function useSessionState(sessionId: string, role: Role) {
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -12,16 +12,16 @@ export function useSessionState(sessionId: string) {
     let alive = true;
     setLoading(true);
     api
-      .getSession(sessionId)
+      .getSession(sessionId, role)
       .then((s) => alive && setSession(s))
       .catch((e: Error) => alive && setError(e.message))
       .finally(() => alive && setLoading(false));
-    const unsub = api.subscribe(sessionId, (s) => alive && setSession(s));
+    const unsub = api.subscribe(sessionId, (s) => alive && setSession(s), role);
     return () => {
       alive = false;
       unsub();
     };
-  }, [sessionId]);
+  }, [sessionId, role]);
 
   return { session, setSession, loading, error, setError };
 }

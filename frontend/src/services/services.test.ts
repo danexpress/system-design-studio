@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createMockApi, ForbiddenError, NotFoundError, type BackendApi } from "./index";
+import { createMockApi, ForbiddenError, NotFoundError, type MockBackendApi } from "./index";
 import { anchorPoint } from "@/components/canvas/DesignCanvas";
 
-let api: BackendApi;
+let api: MockBackendApi;
 
 beforeEach(() => {
   api = createMockApi({ latency: 0 });

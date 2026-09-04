@@ -22,3 +22,13 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+The frontend uses the FastAPI service at `http://127.0.0.1:8000/api` by default.
+From the repository root, `make dev` starts both applications. See
+`.env.example` to override the API URL or development accounts.
+
+For the current seeded-data workflow, the API client automatically exchanges
+the configured interviewer or candidate credentials for a bearer token. This
+keeps the existing role-based demo flows working until a user-facing sign-in
+screen is added; production credentials must never be placed in `VITE_*`
+variables because those values are included in the browser bundle.

@@ -2,16 +2,21 @@
 
 UV ?= uv
 BACKEND_DIR := backend
+FRONTEND_DIR := frontend
 HOST ?= 127.0.0.1
 PORT ?= 8000
 
-.PHONY: help sync run test format lint check
+.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check
 
 help:
 	@printf '%s\n' \
 		'make sync    Install and lock backend dependencies' \
 		'make run     Start the backend with auto-reload' \
+		'make frontend Start the frontend development server' \
+		'make dev     Start the backend and frontend together' \
 		'make test    Run the backend test suite' \
+		'make frontend-test Run frontend unit tests' \
+		'make frontend-build Build the production frontend' \
 		'make format  Format backend Python code' \
 		'make lint    Check backend formatting and lint rules' \
 		'make check   Run lint and tests'
@@ -22,8 +27,20 @@ sync:
 run:
 	cd $(BACKEND_DIR) && $(UV) run uvicorn app.main:app --reload --host $(HOST) --port $(PORT)
 
+frontend:
+	cd $(FRONTEND_DIR) && npm run dev
+
+dev:
+	$(MAKE) -j2 run frontend
+
 test:
 	cd $(BACKEND_DIR) && $(UV) run pytest
+
+frontend-test:
+	cd $(FRONTEND_DIR) && npm test -- --run
+
+frontend-build:
+	cd $(FRONTEND_DIR) && npm run build
 
 format:
 	cd $(BACKEND_DIR) && $(UV) run ruff format app tests
@@ -33,4 +50,4 @@ lint:
 	cd $(BACKEND_DIR) && $(UV) run ruff format --check app tests
 	cd $(BACKEND_DIR) && $(UV) run ruff check app tests
 
-check: lint test
+check: lint test frontend-test frontend-build

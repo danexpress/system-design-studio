@@ -7,7 +7,6 @@ import {
   Link2Off,
   Lock,
   LogIn,
-  PlugZap,
   Square,
   Unlock,
   Play,
@@ -42,7 +41,7 @@ function SessionPage() {
   const { sessionId } = Route.useParams();
   const { role } = Route.useSearch();
   const navigate = useNavigate();
-  const { session, setSession, loading, error } = useSessionState(sessionId);
+  const { session, setSession, loading, error } = useSessionState(sessionId, role);
   const connection = useConnection();
   const [banner, setBanner] = useState<string | null>(null);
   const [canvas, setCanvas] = useState<CanvasDoc | null>(null);
@@ -92,13 +91,6 @@ function SessionPage() {
       right={
         <div className="flex items-center gap-3">
           <ConnectionBadge state={connection} />
-          <button
-            onClick={() => api.simulateConnectionDrop()}
-            title="Simulate a dropped connection"
-            className="inline-flex items-center gap-1.5 rounded-md border border-input px-2.5 py-1.5 text-xs text-muted-foreground transition hover:bg-accent"
-          >
-            <PlugZap className="h-3.5 w-3.5" /> Test reconnect
-          </button>
           <span className="rounded-full border border-border px-2.5 py-1 text-xs capitalize text-muted-foreground">
             {role} view
           </span>

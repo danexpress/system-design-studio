@@ -16,26 +16,30 @@ import type {
   Participant,
   Session,
 } from "./types";
+import { createHttpApi } from "./http-api";
 
 export * from "./types";
 
 export interface BackendApi {
   listSessions(): Promise<Session[]>;
-  getSession(id: string): Promise<Session>;
+  getSession(id: string, role?: Participant["role"]): Promise<Session>;
   getSessionByToken(token: string): Promise<Session>;
   createSession(input: CreateSessionInput): Promise<Session>;
   createShareLink(id: string): Promise<Session>;
   revokeShareLink(id: string): Promise<Session>;
   joinSession(id: string, name: string, role: Participant["role"]): Promise<Session>;
-  leaveSession(id: string, participantId: string): Promise<Session>;
+  leaveSession(id: string, participantId: string, role?: Participant["role"]): Promise<Session>;
   setCandidateCanEdit(id: string, canEdit: boolean): Promise<Session>;
   startSession(id: string): Promise<Session>;
   endSession(id: string): Promise<Session>;
   saveCanvas(id: string, canvas: CanvasDoc, actor: Participant["role"]): Promise<Session>;
   saveFeedback(id: string, feedback: Omit<Feedback, "updatedAt">): Promise<Session>;
-  subscribe(id: string, listener: (s: Session) => void): () => void;
+  subscribe(id: string, listener: (s: Session) => void, role?: Participant["role"]): () => void;
   connectionState(): ConnectionState;
   onConnectionChange(listener: (s: ConnectionState) => void): () => void;
+}
+
+export interface MockBackendApi extends BackendApi {
   simulateConnectionDrop(ms?: number): void;
   reset(sessions?: Session[]): void;
 }
@@ -60,7 +64,7 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export function createMockApi(options: { latency?: number } = {}): BackendApi {
+export function createMockApi(options: { latency?: number } = {}): MockBackendApi {
   const latency = options.latency ?? LATENCY;
   let sessions: Session[] = seedSessions();
   const listeners = new Map<string, Set<(s: Session) => void>>();
@@ -241,4 +245,4 @@ export function createMockApi(options: { latency?: number } = {}): BackendApi {
   };
 }
 
-export const api: BackendApi = createMockApi();
+export const api: BackendApi = createHttpApi();
