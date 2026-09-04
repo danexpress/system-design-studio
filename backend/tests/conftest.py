@@ -5,8 +5,8 @@ from app.main import create_app
 
 
 @pytest.fixture
-def app():
-    return create_app()
+def app(tmp_path):
+    return create_app(f"sqlite:///{tmp_path / 'test.db'}")
 
 
 @pytest.fixture

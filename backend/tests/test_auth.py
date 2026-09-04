@@ -1,10 +1,13 @@
+from app.database import UserRecord
 from app.models import Role
 
 
 def test_seeded_passwords_are_hashed(app):
-    user = app.state.auth._users["interviewer@example.com"]
-    assert user.password_hash != "interviewer-password"
-    assert user.password_hash.startswith("$argon2")
+    with app.state.database.session() as database_session:
+        user = database_session.get(UserRecord, "interviewer@example.com")
+        assert user is not None
+        assert user.password_hash != "interviewer-password"
+        assert user.password_hash.startswith("$argon2")
 
 
 def test_login_returns_a_working_bearer_token(client):

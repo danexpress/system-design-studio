@@ -1,7 +1,8 @@
 # System Design Studio backend
 
-The API is an in-memory FastAPI implementation of the repository's
-`openapi.yaml` contract. Data resets whenever the process restarts.
+The API is a FastAPI and SQLAlchemy implementation of the repository's
+`openapi.yaml` contract. It uses SQLite by default and persists data across
+process restarts.
 
 ## Development
 
@@ -10,6 +11,21 @@ uv sync
 uv run uvicorn app.main:app --reload
 uv run pytest
 ```
+
+The database connection is configured with `DATABASE_URL`:
+
+```sh
+DATABASE_URL=sqlite:///./local.db uv run uvicorn app.main:app --reload
+```
+
+If the variable is omitted, the server uses
+`sqlite:///./system_design_studio.db`. Engine creation and persistence are
+isolated in `app/database.py`; the store and routers contain no SQLite-specific
+queries. A future PostgreSQL deployment can use a SQLAlchemy PostgreSQL URL once
+the corresponding database driver is installed.
+
+The schema and demo records are created only when the database is empty, so
+restarting the app does not overwrite existing sessions or password hashes.
 
 The seeded development accounts are:
 
