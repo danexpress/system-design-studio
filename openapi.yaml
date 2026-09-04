@@ -15,6 +15,7 @@ servers:
   - url: /api
 
 tags:
+  - name: Authentication
   - name: Sessions
   - name: Invitations
   - name: Presence
@@ -23,6 +24,35 @@ tags:
   - name: Realtime
 
 paths:
+  /auth/token:
+    post:
+      tags: [Authentication]
+      operationId: createToken
+      summary: Exchange credentials for a bearer token
+      description: Public endpoint. Passwords are verified against Argon2 hashes.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Bearer access token for the authenticated account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: The supplied credentials are invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /sessions:
     get:
       tags: [Sessions]
@@ -484,6 +514,29 @@ components:
             $ref: "#/components/schemas/Error"
 
   schemas:
+    LoginInput:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+
+    TokenResponse:
+      type: object
+      additionalProperties: false
+      required: [accessToken, tokenType]
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          const: bearer
+
     Error:
       type: object
       additionalProperties: false
