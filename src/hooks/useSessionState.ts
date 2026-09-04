@@ -41,10 +41,12 @@ export function useAutosave<T>(value: T, save: (v: T) => Promise<unknown>, delay
   saveRef.current = save;
 
   useEffect(() => {
+    if (value === null || value === undefined) return;
     if (first.current) {
       first.current = false;
       return;
     }
+
     setState("saving");
     const t = setTimeout(() => {
       saveRef
