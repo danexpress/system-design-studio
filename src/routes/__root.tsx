@@ -77,14 +77,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "WhiteboardIQ — System design interview platform" },
+      {
+        name: "description",
+        content:
+          "Run system design interviews on a live shared canvas with presence, editing controls, and autosaved feedback.",
+      },
+      { property: "og:title", content: "WhiteboardIQ — System design interview platform" },
+      {
+        property: "og:description",
+        content: "Live shared system design canvas for technical interviews.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+
     ],
     links: [
       {
