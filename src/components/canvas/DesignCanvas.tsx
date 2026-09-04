@@ -70,7 +70,7 @@ interface Props {
   doc: CanvasDoc;
   onChange: (next: CanvasDoc) => void;
   readOnly?: boolean;
-  lockedReason?: string;
+  lockedReason?: string | undefined;
 }
 
 export function DesignCanvas({ doc, onChange, readOnly = false, lockedReason }: Props) {
