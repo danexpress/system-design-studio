@@ -24,6 +24,14 @@ isolated in `app/database.py`; the store and routers contain no SQLite-specific
 queries. A future PostgreSQL deployment can use a SQLAlchemy PostgreSQL URL once
 the corresponding database driver is installed.
 
+Browser origins outside local development can be allowed with a comma-separated
+`CORS_ORIGINS` value. Localhost and `127.0.0.1` are accepted on any port by
+default:
+
+```sh
+CORS_ORIGINS=https://studio.example.com,https://preview.example.com make run
+```
+
 The schema and demo records are created only when the database is empty, so
 restarting the app does not overwrite existing sessions or password hashes.
 

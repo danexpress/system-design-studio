@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +15,11 @@ from .store import ForbiddenError, NotFoundError, SessionStore
 
 def error_response(status_code: int, message: str) -> JSONResponse:
     return JSONResponse(status_code=status_code, content={"message": message})
+
+
+def cors_origins() -> list[str]:
+    configured = os.getenv("CORS_ORIGINS", "")
+    return [origin.strip() for origin in configured.split(",") if origin.strip()]
 
 
 def create_app(database_url: str | None = None) -> FastAPI:
@@ -30,7 +37,8 @@ def create_app(database_url: str | None = None) -> FastAPI:
     application.state.auth = seeded_auth_service(database)
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+        allow_origins=cors_origins(),
+        allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
