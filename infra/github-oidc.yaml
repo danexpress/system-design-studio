@@ -5,9 +5,15 @@ Parameters:
   GitHubOrganization:
     Type: String
     Default: danexpress
+  GitHubOrganizationId:
+    Type: String
+    Default: "112915741"
   GitHubRepository:
     Type: String
     Default: system-design-studio
+  GitHubRepositoryId:
+    Type: String
+    Default: "1357005655"
   GitHubBranch:
     Type: String
     Default: main
@@ -38,7 +44,7 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrganization}/${GitHubRepository}:ref:refs/heads/${GitHubBranch}
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrganization}@${GitHubOrganizationId}/${GitHubRepository}@${GitHubRepositoryId}:ref:refs/heads/${GitHubBranch}
       Policies:
         - PolicyName: CloudFormationApplicationDeployment
           PolicyDocument:

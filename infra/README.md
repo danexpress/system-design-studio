@@ -44,5 +44,6 @@ gh variable set AWS_DEPLOY_ROLE_ARN --body "$role_arn"
 ```
 
 The trust policy only accepts runs from the `main` branch of
-`danexpress/system-design-studio`. Pull requests run tests but cannot assume the
-deployment role.
+`danexpress/system-design-studio`. It includes GitHub's immutable organization
+and repository IDs because this organization uses a customized OIDC subject
+template. Pull requests run tests but cannot assume the deployment role.
