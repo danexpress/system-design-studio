@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -9,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from .auth import AuthenticationError, AuthorizationError, seeded_auth_service
 from .database import Database
+from .frontend import serve_frontend
 from .routers import auth, sessions
 from .store import ForbiddenError, NotFoundError, SessionStore
 
@@ -22,7 +24,9 @@ def cors_origins() -> list[str]:
     return [origin.strip() for origin in configured.split(",") if origin.strip()]
 
 
-def create_app(database_url: str | None = None) -> FastAPI:
+def create_app(
+    database_url: str | None = None, frontend_directory: str | Path | None = None
+) -> FastAPI:
     application = FastAPI(
         title="System Design Studio API",
         version="1.0.0",
@@ -74,6 +78,7 @@ def create_app(database_url: str | None = None) -> FastAPI:
 
     application.include_router(auth.router, prefix="/api")
     application.include_router(sessions.router, prefix="/api")
+    serve_frontend(application, frontend_directory)
     return application
 
 
