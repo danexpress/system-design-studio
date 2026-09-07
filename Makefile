@@ -8,8 +8,10 @@ PORT ?= 8000
 DATABASE_URL ?= sqlite:////data/system_design_studio.db
 INTEGRATION_PORT ?= 18083
 INTEGRATION_COMPOSE_PROJECT ?= system-design-studio-integration
+E2E_PORT ?= 18084
+E2E_COMPOSE_PROJECT ?= system-design-studio-e2e
 
-.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check integration-test docker-build docker-run compose-up compose-down compose-logs
+.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check integration-test e2e-install e2e-test docker-build docker-run compose-up compose-down compose-logs
 
 help:
 	@printf '%s\n' \
@@ -21,6 +23,8 @@ help:
 		'make frontend-test Run frontend unit tests' \
 		'make frontend-build Build the production frontend' \
 		'make integration-test Test the isolated Compose stack' \
+		'make e2e-install Install Playwright and Chromium' \
+		'make e2e-test Run browser tests against isolated Compose stack' \
 		'make docker-build Build the full-stack container image' \
 		'make docker-run Run the full-stack container on PORT' \
 		'make compose-up Start the app and PostgreSQL' \
@@ -86,6 +90,28 @@ integration-test:
 	INTEGRATION_BASE_URL="http://127.0.0.1:$(INTEGRATION_PORT)" \
 	INTEGRATION_COMPOSE_PROJECT="$$project" \
 		$(UV) run pytest integration_tests -m integration
+
+e2e-install:
+	cd e2e && npm install
+	cd e2e && npm run install-browser
+
+e2e-test:
+	@set -eu; \
+	project="$(E2E_COMPOSE_PROJECT)"; \
+	cleanup() { \
+		status=$$?; \
+		trap - EXIT INT TERM; \
+		if [ $$status -ne 0 ]; then docker compose -f "$(CURDIR)/docker-compose.yaml" -p "$$project" logs; fi; \
+		docker compose -f "$(CURDIR)/docker-compose.yaml" -p "$$project" down -v; \
+		exit $$status; \
+	}; \
+	trap cleanup EXIT INT TERM; \
+	PORT="$(E2E_PORT)" \
+	POSTGRES_PASSWORD=e2e-password \
+	JWT_SECRET=e2e-secret-with-more-than-thirty-two-characters \
+		docker compose -f "$(CURDIR)/docker-compose.yaml" -p "$$project" up --build -d --wait --wait-timeout 120; \
+	cd e2e; \
+	E2E_BASE_URL="http://127.0.0.1:$(E2E_PORT)" npm test
 
 format:
 	cd $(BACKEND_DIR) && $(UV) run ruff format app tests integration_tests

@@ -40,8 +40,11 @@ export function SessionPage() {
   const [joined, setJoined] = useState(role === "interviewer");
 
   useEffect(() => {
-    if (session && !canvas) setCanvas(session.canvas);
-  }, [session, canvas]);
+    if (!session) return;
+    setCanvas((current) =>
+      !current || session.canvas.revision > current.revision ? session.canvas : current,
+    );
+  }, [session]);
 
   useEffect(() => {
     if (!banner) return;
