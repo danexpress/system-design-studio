@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { api, type Session } from "@/services";
 import { TopBar } from "@/components/app/Shell";
@@ -7,16 +7,22 @@ export const Route = createFileRoute("/join/$token")({
   head: () => ({
     meta: [
       { title: "Join interview — WhiteboardIQ" },
-      { name: "description", content: "Join your scheduled system design interview via invite link." },
+      {
+        name: "description",
+        content: "Join your scheduled system design interview via invite link.",
+      },
       { property: "og:title", content: "Join interview — WhiteboardIQ" },
-      { property: "og:description", content: "Join your scheduled system design interview via invite link." },
+      {
+        property: "og:description",
+        content: "Join your scheduled system design interview via invite link.",
+      },
     ],
   }),
   component: JoinPage,
 });
 
-function JoinPage() {
-  const { token } = Route.useParams();
+export function JoinPage() {
+  const { token } = useParams({ from: "/join/$token" });
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);

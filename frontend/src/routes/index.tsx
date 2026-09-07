@@ -28,7 +28,7 @@ function shareUrl(token: string) {
   return `${origin}/join/${token}`;
 }
 
-function Dashboard() {
+export function Dashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "live" | "scheduled" | "ended">("all");
@@ -67,7 +67,10 @@ function Dashboard() {
   );
 
   async function toggleLink(s: Session) {
-    const next = s.share && !s.share.revokedAt ? await api.revokeShareLink(s.id) : await api.createShareLink(s.id);
+    const next =
+      s.share && !s.share.revokedAt
+        ? await api.revokeShareLink(s.id)
+        : await api.createShareLink(s.id);
     setSessions((prev) => prev.map((x) => (x.id === next.id ? next : x)));
     setToast(next.share?.revokedAt ? "Invite link revoked" : "New invite link created");
   }
@@ -96,7 +99,9 @@ function Dashboard() {
       />
 
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Interview sessions</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Interview sessions
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Every session gets a shared canvas, presence, and autosaved feedback.
         </p>
@@ -111,7 +116,9 @@ function Dashboard() {
           ).map(([label, value]) => (
             <div key={label} className="rounded-lg border border-border bg-card p-4">
               <p className="text-xs uppercase tracking-widest text-muted-foreground">{label}</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-card-foreground">{value}</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-card-foreground">
+                {value}
+              </p>
             </div>
           ))}
         </div>
@@ -135,7 +142,9 @@ function Dashboard() {
                 aria-selected={filter === f}
                 onClick={() => setFilter(f)}
                 className={`rounded px-3 py-1.5 text-sm capitalize transition ${
-                  filter === f ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                  filter === f
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {f}
@@ -177,7 +186,8 @@ function Dashboard() {
                         {new Date(s.scheduledFor).toLocaleString()} · {s.durationMinutes} min
                       </span>
                       <span>
-                        {s.participants.filter((p) => p.online).length} online · rev {s.canvas.revision}
+                        {s.participants.filter((p) => p.online).length} online · rev{" "}
+                        {s.canvas.revision}
                       </span>
                     </div>
                   </div>
@@ -194,7 +204,11 @@ function Dashboard() {
                       onClick={() => toggleLink(s)}
                       className="inline-flex items-center gap-1.5 rounded-md border border-input px-2.5 py-1.5 text-xs text-foreground transition hover:bg-accent"
                     >
-                      {linkActive ? <Link2Off className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
+                      {linkActive ? (
+                        <Link2Off className="h-3.5 w-3.5" />
+                      ) : (
+                        <Link2 className="h-3.5 w-3.5" />
+                      )}
                       {linkActive ? "Revoke" : "Create link"}
                     </button>
                     <Link

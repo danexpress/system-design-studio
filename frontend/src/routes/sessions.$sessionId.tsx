@@ -1,16 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  Copy,
-  Link2,
-  Link2Off,
-  Lock,
-  LogIn,
-  Square,
-  Unlock,
-  Play,
-} from "lucide-react";
+import { ArrowLeft, Copy, Link2, Link2Off, Lock, LogIn, Square, Unlock, Play } from "lucide-react";
 import { api, type CanvasDoc, type Feedback, type Role, type Session } from "@/services";
 import { ConnectionBadge, StatusPill, TopBar } from "@/components/app/Shell";
 import { DesignCanvas } from "@/components/canvas/DesignCanvas";
@@ -18,28 +8,30 @@ import { useAutosave, useConnection, useSessionState } from "@/hooks/useSessionS
 
 export const Route = createFileRoute("/sessions/$sessionId")({
   validateSearch: (search: Record<string, unknown>): { role: Role } => ({
-    role: search['role'] === "candidate" ? "candidate" : "interviewer",
+    role: search["role"] === "candidate" ? "candidate" : "interviewer",
   }),
   head: () => ({
     meta: [
       { title: "Live interview session — WhiteboardIQ" },
       {
         name: "description",
-        content: "Shared system design canvas with presence, editing controls, and autosaved feedback.",
+        content:
+          "Shared system design canvas with presence, editing controls, and autosaved feedback.",
       },
       { property: "og:title", content: "Live interview session — WhiteboardIQ" },
       {
         property: "og:description",
-        content: "Shared system design canvas with presence, editing controls, and autosaved feedback.",
+        content:
+          "Shared system design canvas with presence, editing controls, and autosaved feedback.",
       },
     ],
   }),
   component: SessionPage,
 });
 
-function SessionPage() {
-  const { sessionId } = Route.useParams();
-  const { role } = Route.useSearch();
+export function SessionPage() {
+  const { sessionId } = useParams({ from: "/sessions/$sessionId" });
+  const { role } = useSearch({ from: "/sessions/$sessionId" });
   const navigate = useNavigate();
   const { session, setSession, loading, error } = useSessionState(sessionId, role);
   const connection = useConnection();
@@ -84,7 +76,9 @@ function SessionPage() {
 
   const shared = session;
   const linkActive = Boolean(shared.share && !shared.share.revokedAt);
-  const shareHref = shared.share ? `${typeof window === "undefined" ? "" : window.location.origin}/join/${shared.share.token}` : "";
+  const shareHref = shared.share
+    ? `${typeof window === "undefined" ? "" : window.location.origin}/join/${shared.share.token}`
+    : "";
 
   const header = (
     <TopBar
@@ -118,7 +112,9 @@ function SessionPage() {
         {header}
         <main className="mx-auto flex max-w-xl flex-col items-center px-4 py-16 text-center">
           <StatusPill status={shared.status} />
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">{shared.title}</h1>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
+            {shared.title}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {shared.status === "scheduled"
               ? "You're in the lobby. The interviewer will start the session shortly."
@@ -144,7 +140,10 @@ function SessionPage() {
           </div>
           <button
             onClick={async () => {
-              await act(() => api.joinSession(sessionId, shared.candidateName, "candidate"), "Joined the session");
+              await act(
+                () => api.joinSession(sessionId, shared.candidateName, "candidate"),
+                "Joined the session",
+              );
               setJoined(true);
             }}
             disabled={shared.status === "scheduled"}
@@ -173,7 +172,11 @@ function SessionPage() {
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       {header}
       <div className="flex flex-wrap items-center gap-3 border-b border-border bg-card/40 px-4 py-2">
-        <Link to="/" className="text-muted-foreground hover:text-foreground" aria-label="Back to dashboard">
+        <Link
+          to="/"
+          className="text-muted-foreground hover:text-foreground"
+          aria-label="Back to dashboard"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <h1 className="text-sm font-semibold text-foreground">{shared.title}</h1>
@@ -190,7 +193,11 @@ function SessionPage() {
         {role === "interviewer" ? (
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <button
-              onClick={() => navigator.clipboard?.writeText(shareHref).then(() => setBanner("Invite link copied"))}
+              onClick={() =>
+                navigator.clipboard
+                  ?.writeText(shareHref)
+                  .then(() => setBanner("Invite link copied"))
+              }
               disabled={!linkActive}
               className="inline-flex items-center gap-1.5 rounded-md border border-input px-2.5 py-1.5 text-xs transition hover:bg-accent disabled:opacity-40"
             >
@@ -204,19 +211,29 @@ function SessionPage() {
               }
               className="inline-flex items-center gap-1.5 rounded-md border border-input px-2.5 py-1.5 text-xs transition hover:bg-accent"
             >
-              {linkActive ? <Link2Off className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
+              {linkActive ? (
+                <Link2Off className="h-3.5 w-3.5" />
+              ) : (
+                <Link2 className="h-3.5 w-3.5" />
+              )}
               {linkActive ? "Revoke link" : "Create link"}
             </button>
             <button
               onClick={() =>
                 act(
                   () => api.setCandidateCanEdit(sessionId, !shared.candidateCanEdit),
-                  shared.candidateCanEdit ? "Candidate editing locked" : "Candidate editing unlocked",
+                  shared.candidateCanEdit
+                    ? "Candidate editing locked"
+                    : "Candidate editing unlocked",
                 )
               }
               className="inline-flex items-center gap-1.5 rounded-md border border-input px-2.5 py-1.5 text-xs transition hover:bg-accent"
             >
-              {shared.candidateCanEdit ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+              {shared.candidateCanEdit ? (
+                <Lock className="h-3.5 w-3.5" />
+              ) : (
+                <Unlock className="h-3.5 w-3.5" />
+              )}
               {shared.candidateCanEdit ? "Lock candidate" : "Unlock candidate"}
             </button>
             {shared.status === "scheduled" ? (
@@ -265,7 +282,10 @@ function SessionPage() {
       </div>
 
       {banner ? (
-        <div role="status" className="pointer-events-none fixed bottom-5 left-1/2 -translate-x-1/2 rounded-md border border-border bg-popover px-4 py-2 text-sm text-popover-foreground shadow-lg">
+        <div
+          role="status"
+          className="pointer-events-none fixed bottom-5 left-1/2 -translate-x-1/2 rounded-md border border-border bg-popover px-4 py-2 text-sm text-popover-foreground shadow-lg"
+        >
           {banner}
         </div>
       ) : null}
@@ -296,7 +316,9 @@ function Presence({ session, compact = false }: { session: Session; compact?: bo
               />
               <span className="text-card-foreground">{p.name}</span>
               <span className="text-xs capitalize text-muted-foreground">{p.role}</span>
-              <span className="ml-auto text-xs text-muted-foreground">{p.online ? "online" : "offline"}</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {p.online ? "online" : "offline"}
+              </span>
             </>
           )}
         </li>
@@ -315,23 +337,39 @@ function useFeedbackDraft(session: Session, onSaved: (s: Session) => void) {
   return { draft, setDraft, save };
 }
 
-function InterviewerPanel({ session, onSaved }: { session: Session; onSaved: (s: Session) => void }) {
+function InterviewerPanel({
+  session,
+  onSaved,
+}: {
+  session: Session;
+  onSaved: (s: Session) => void;
+}) {
   const { draft, setDraft, save } = useFeedbackDraft(session, onSaved);
   return (
     <aside className="hidden w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-border bg-card/60 p-4 lg:flex">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Prompt</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Prompt
+        </p>
         <p className="mt-1 text-sm text-card-foreground">{session.prompt}</p>
       </div>
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Participants</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Participants
+        </p>
         <Presence session={session} />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Private notes</p>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Private notes
+          </p>
           <span className="text-[11px] text-muted-foreground">
-            {save.state === "saving" ? "Saving…" : save.state === "error" ? "Save failed" : "Autosaved"}
+            {save.state === "saving"
+              ? "Saving…"
+              : save.state === "error"
+                ? "Save failed"
+                : "Autosaved"}
           </span>
         </div>
         <textarea
@@ -396,7 +434,9 @@ function ScoreGrid({
         <select
           disabled={disabled}
           value={draft.recommendation}
-          onChange={(e) => setDraft({ ...draft, recommendation: e.target.value as Feedback["recommendation"] })}
+          onChange={(e) =>
+            setDraft({ ...draft, recommendation: e.target.value as Feedback["recommendation"] })
+          }
           className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="">Not set</option>
@@ -430,7 +470,10 @@ function ReviewView({
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-      <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft className="h-4 w-4" /> Back to dashboard
       </Link>
       <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -452,11 +495,15 @@ function ReviewView({
         </section>
         <aside className="space-y-4 rounded-lg border border-border bg-card p-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Prompt</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Prompt
+            </p>
             <p className="mt-1 text-sm text-card-foreground">{session.prompt}</p>
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Feedback</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Feedback
+            </p>
             <span className="text-[11px] text-muted-foreground">
               {role !== "interviewer"
                 ? "Interviewer only"

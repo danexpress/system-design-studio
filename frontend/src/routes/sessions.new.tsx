@@ -23,14 +23,23 @@ export const Route = createFileRoute("/sessions/new")({
 });
 
 const PRESETS = [
-  { title: "Design a social feed", prompt: "Design the read and write path for a social feed serving 50M DAU." },
-  { title: "Design a URL shortener", prompt: "Design a URL shortener with analytics and custom aliases." },
-  { title: "Design a chat system", prompt: "Design 1:1 and group messaging with delivery receipts and presence." },
+  {
+    title: "Design a social feed",
+    prompt: "Design the read and write path for a social feed serving 50M DAU.",
+  },
+  {
+    title: "Design a URL shortener",
+    prompt: "Design a URL shortener with analytics and custom aliases.",
+  },
+  {
+    title: "Design a chat system",
+    prompt: "Design 1:1 and group messaging with delivery receipts and presence.",
+  },
 ];
 
 type Errors = Partial<Record<string, string>>;
 
-function NewSession() {
+export function NewSession() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     title: "",
@@ -50,11 +59,13 @@ function NewSession() {
 
   function validate(): Errors {
     const e: Errors = {};
-    if (form.title.trim().length < 4) e['title'] = "Give the session a descriptive title";
-    if (form.prompt.trim().length < 12) e['prompt'] = "Add a prompt of at least 12 characters";
-    if (form.candidateName.trim().length < 2) e['candidateName'] = "Candidate name is required";
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.candidateEmail)) e['candidateEmail'] = "Enter a valid email";
-    if (form.durationMinutes < 15 || form.durationMinutes > 180) e['durationMinutes'] = "Between 15 and 180 minutes";
+    if (form.title.trim().length < 4) e["title"] = "Give the session a descriptive title";
+    if (form.prompt.trim().length < 12) e["prompt"] = "Add a prompt of at least 12 characters";
+    if (form.candidateName.trim().length < 2) e["candidateName"] = "Candidate name is required";
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.candidateEmail))
+      e["candidateEmail"] = "Enter a valid email";
+    if (form.durationMinutes < 15 || form.durationMinutes > 180)
+      e["durationMinutes"] = "Between 15 and 180 minutes";
     return e;
   }
 
@@ -80,16 +91,22 @@ function NewSession() {
     }
   }
 
-  const field = "w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
+  const field =
+    "w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
 
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
       <main className="mx-auto max-w-3xl px-4 py-8">
-        <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="h-4 w-4" /> Back to dashboard
         </Link>
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">New interview session</h1>
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
+          New interview session
+        </h1>
 
         <div className="mt-4 flex flex-wrap gap-2">
           {PRESETS.map((p) => (
@@ -104,12 +121,21 @@ function NewSession() {
           ))}
         </div>
 
-        <form onSubmit={submit} noValidate className="mt-6 space-y-5 rounded-lg border border-border bg-card p-6">
-          <Field label="Session title" error={errors['title']} id="title">
-            <input id="title" className={field} value={form.title} onChange={(e) => set("title", e.target.value)} />
+        <form
+          onSubmit={submit}
+          noValidate
+          className="mt-6 space-y-5 rounded-lg border border-border bg-card p-6"
+        >
+          <Field label="Session title" error={errors["title"]} id="title">
+            <input
+              id="title"
+              className={field}
+              value={form.title}
+              onChange={(e) => set("title", e.target.value)}
+            />
           </Field>
 
-          <Field label="Prompt given to the candidate" error={errors['prompt']} id="prompt">
+          <Field label="Prompt given to the candidate" error={errors["prompt"]} id="prompt">
             <textarea
               id="prompt"
               rows={4}
@@ -134,7 +160,7 @@ function NewSession() {
                 ))}
               </select>
             </Field>
-            <Field label="Duration (minutes)" error={errors['durationMinutes']} id="duration">
+            <Field label="Duration (minutes)" error={errors["durationMinutes"]} id="duration">
               <input
                 id="duration"
                 type="number"
@@ -143,11 +169,22 @@ function NewSession() {
                 onChange={(e) => set("durationMinutes", Number(e.target.value))}
               />
             </Field>
-            <Field label="Candidate name" error={errors['candidateName']} id="cname">
-              <input id="cname" className={field} value={form.candidateName} onChange={(e) => set("candidateName", e.target.value)} />
+            <Field label="Candidate name" error={errors["candidateName"]} id="cname">
+              <input
+                id="cname"
+                className={field}
+                value={form.candidateName}
+                onChange={(e) => set("candidateName", e.target.value)}
+              />
             </Field>
-            <Field label="Candidate email" error={errors['candidateEmail']} id="cemail">
-              <input id="cemail" type="email" className={field} value={form.candidateEmail} onChange={(e) => set("candidateEmail", e.target.value)} />
+            <Field label="Candidate email" error={errors["candidateEmail"]} id="cemail">
+              <input
+                id="cemail"
+                type="email"
+                className={field}
+                value={form.candidateEmail}
+                onChange={(e) => set("candidateEmail", e.target.value)}
+              />
             </Field>
             <Field label="Scheduled for" id="when">
               <input
