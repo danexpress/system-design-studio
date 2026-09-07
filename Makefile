@@ -6,7 +6,7 @@ FRONTEND_DIR := frontend
 HOST ?= 127.0.0.1
 PORT ?= 8000
 
-.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check
+.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check docker-build docker-run
 
 help:
 	@printf '%s\n' \
@@ -17,6 +17,8 @@ help:
 		'make test    Run the backend test suite' \
 		'make frontend-test Run frontend unit tests' \
 		'make frontend-build Build the production frontend' \
+		'make docker-build Build the full-stack container image' \
+		'make docker-run Run the full-stack container on PORT' \
 		'make format  Format backend Python code' \
 		'make lint    Check backend formatting and lint rules' \
 		'make check   Run lint and tests'
@@ -41,6 +43,13 @@ frontend-test:
 
 frontend-build:
 	cd $(FRONTEND_DIR) && npm run build
+	cd $(FRONTEND_DIR) && npm run build:static
+
+docker-build:
+	docker build -t system-design-studio .
+
+docker-run:
+	docker run --rm -p $(PORT):8000 -v system-design-studio-data:/data system-design-studio
 
 format:
 	cd $(BACKEND_DIR) && $(UV) run ruff format app tests

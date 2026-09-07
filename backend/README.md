@@ -35,6 +35,20 @@ CORS_ORIGINS=https://studio.example.com,https://preview.example.com make run
 The schema and demo records are created only when the database is empty, so
 restarting the app does not overwrite existing sessions or password hashes.
 
+## Container
+
+The repository Dockerfile builds the frontend as a static SPA, installs the
+backend with `uv`, and copies the frontend output into the final Python image.
+FastAPI serves both the `/api` endpoints and frontend routes from one origin.
+
+```sh
+make docker-build
+make docker-run
+```
+
+Open `http://localhost:8000`. The named Docker volume preserves the SQLite
+database between container runs.
+
 The seeded development accounts are:
 
 - Interviewer: `interviewer@example.com` / `interviewer-password`
