@@ -11,7 +11,7 @@ INTEGRATION_COMPOSE_PROJECT ?= system-design-studio-integration
 E2E_PORT ?= 18084
 E2E_COMPOSE_PROJECT ?= system-design-studio-e2e
 
-.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check integration-test e2e-install e2e-test docker-build docker-run compose-up compose-down compose-logs
+.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check integration-test e2e-install e2e-test aws-deploy docker-build docker-run compose-up compose-down compose-logs
 
 help:
 	@printf '%s\n' \
@@ -25,6 +25,7 @@ help:
 		'make integration-test Test the isolated Compose stack' \
 		'make e2e-install Install Playwright and Chromium' \
 		'make e2e-test Run browser tests against isolated Compose stack' \
+		'make aws-deploy Deploy the application to AWS with CloudFormation' \
 		'make docker-build Build the full-stack container image' \
 		'make docker-run Run the full-stack container on PORT' \
 		'make compose-up Start the app and PostgreSQL' \
@@ -112,6 +113,9 @@ e2e-test:
 		docker compose -f "$(CURDIR)/docker-compose.yaml" -p "$$project" up --build -d --wait --wait-timeout 120; \
 	cd e2e; \
 	E2E_BASE_URL="http://127.0.0.1:$(E2E_PORT)" npm test
+
+aws-deploy:
+	bash infra/deploy.sh
 
 format:
 	cd $(BACKEND_DIR) && $(UV) run ruff format app tests integration_tests

@@ -2,7 +2,13 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 
-from app.database import Database, SessionRecord, UserRecord, normalize_database_url
+from app.database import (
+    Database,
+    SessionRecord,
+    UserRecord,
+    database_url_from_environment,
+    normalize_database_url,
+)
 from app.main import create_app
 
 
@@ -74,3 +80,15 @@ def test_postgres_urls_use_the_psycopg_3_dialect():
         assert database.engine.dialect.driver == "psycopg"
     finally:
         database.engine.dispose()
+
+
+def test_database_url_can_be_assembled_from_secret_environment(monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("DATABASE_HOST", "database.internal")
+    monkeypatch.setenv("DATABASE_USER", "studio")
+    monkeypatch.setenv("DATABASE_PASSWORD", "awssecret123")
+    monkeypatch.setenv("DATABASE_NAME", "studio")
+
+    assert database_url_from_environment() == (
+        "postgresql+psycopg://studio:awssecret123@database.internal:5432/studio"
+    )

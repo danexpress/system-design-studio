@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from typing import Any
 
 from sqlalchemy import JSON, String, create_engine
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import URL, Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -20,6 +20,22 @@ def normalize_database_url(url: str) -> str:
     if url.startswith("postgresql://"):
         return url.replace("postgresql://", "postgresql+psycopg://", 1)
     return url
+
+
+def database_url_from_environment() -> str:
+    """Build a URL without exposing an injected database password in configuration."""
+    if configured_url := os.getenv("DATABASE_URL"):
+        return normalize_database_url(configured_url)
+    if host := os.getenv("DATABASE_HOST"):
+        return URL.create(
+            drivername=os.getenv("DATABASE_DRIVER", "postgresql+psycopg"),
+            username=os.getenv("DATABASE_USER", "studio"),
+            password=os.getenv("DATABASE_PASSWORD"),
+            host=host,
+            port=int(os.getenv("DATABASE_PORT", "5432")),
+            database=os.getenv("DATABASE_NAME", "studio"),
+        ).render_as_string(hide_password=False)
+    return DEFAULT_DATABASE_URL
 
 
 class Base(DeclarativeBase):
@@ -44,9 +60,7 @@ class UserRecord(Base):
 
 class Database:
     def __init__(self, url: str | None = None) -> None:
-        self.url = normalize_database_url(
-            url or os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
-        )
+        self.url = normalize_database_url(url or database_url_from_environment())
         self.engine = self._create_engine(self.url)
         self.session_factory = sessionmaker(
             bind=self.engine,
