@@ -24,6 +24,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = ["integration: black-box tests that require the docker-compose stack"]
 
 [tool.ruff.lint]
 ignore = ["B008"] # FastAPI intentionally uses Depends() in parameter defaults.

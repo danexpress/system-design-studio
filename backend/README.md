@@ -71,6 +71,26 @@ The `postgres-data` volume preserves database records. `POSTGRES_DB`,
 `POSTGRES_USER`, `POSTGRES_PASSWORD`, `JWT_SECRET`, and `PORT` can be overridden
 through environment variables or a root `.env` file.
 
+## Compose integration tests
+
+Run the black-box suite against an isolated Compose project:
+
+```sh
+make integration-test
+```
+
+The target builds and starts both services, waits for their health checks, runs
+the tests over HTTP, and removes its containers, network, and test volume. On a
+failure it prints the Compose logs before cleanup. The suite covers:
+
+- container health, frontend assets, and SPA fallback routing;
+- valid and invalid authentication plus role authorization;
+- PostgreSQL seed data;
+- session creation, invite links, start/end lifecycle, and revocation;
+- candidate canvas editing and interviewer locks;
+- realtime SSE delivery after a mutation;
+- PostgreSQL persistence across an app-container restart.
+
 The seeded development accounts are:
 
 - Interviewer: `interviewer@example.com` / `interviewer-password`
