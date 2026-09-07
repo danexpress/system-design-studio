@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from .auth import AuthenticationError, AuthorizationError, seeded_auth_service
 from .database import Database
 from .frontend import serve_frontend
-from .routers import auth, sessions
+from .routers import auth, health, sessions
 from .store import ForbiddenError, NotFoundError, SessionStore
 
 
@@ -77,6 +77,7 @@ def create_app(
         return error_response(status.HTTP_400_BAD_REQUEST, str(message))
 
     application.include_router(auth.router, prefix="/api")
+    application.include_router(health.router, prefix="/api")
     application.include_router(sessions.router, prefix="/api")
     serve_frontend(application, frontend_directory)
     return application

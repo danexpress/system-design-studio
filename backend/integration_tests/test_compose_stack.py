@@ -55,10 +55,13 @@ def new_session_payload(title: str) -> dict:
 
 
 def test_container_health_frontend_and_spa_fallback(client):
+    health = client.get("/api/health")
     schema = client.get("/api/openapi.json")
     root = client.get("/")
     spa_route = client.get("/sessions/new")
 
+    assert health.status_code == 200
+    assert health.json() == {"status": "ok"}
     assert schema.status_code == 200
     assert schema.json()["info"]["title"] == "System Design Studio API"
     assert root.status_code == 200

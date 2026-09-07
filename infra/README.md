@@ -24,3 +24,25 @@ ECS to stabilize, and prints the public URL.
 This stack creates billable resources, including an Application Load Balancer,
 an ECS Fargate task, RDS PostgreSQL, CloudWatch Logs, ECR, and Secrets Manager.
 RDS snapshots and the ECR repository are retained if the stack is deleted.
+
+## GitHub Actions OIDC
+
+The CI/CD workflow uses short-lived AWS credentials issued through GitHub OIDC.
+Bootstrap the account once, then store its output as a repository variable:
+
+```sh
+aws cloudformation deploy \
+  --stack-name system-design-studio-github-oidc \
+  --template-file infra/github-oidc.yaml \
+  --capabilities CAPABILITY_IAM
+
+role_arn="$(aws cloudformation describe-stacks \
+  --stack-name system-design-studio-github-oidc \
+  --query "Stacks[0].Outputs[?OutputKey=='RoleArn'].OutputValue" \
+  --output text)"
+gh variable set AWS_DEPLOY_ROLE_ARN --body "$role_arn"
+```
+
+The trust policy only accepts runs from the `main` branch of
+`danexpress/system-design-studio`. Pull requests run tests but cannot assume the
+deployment role.

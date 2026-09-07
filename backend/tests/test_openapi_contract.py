@@ -26,4 +26,4 @@ def test_fastapi_implements_every_static_openapi_operation(app):
     generated = app.openapi()
 
     assert operations(generated["paths"]) == operations(contract["paths"])
-    assert len(operations(contract["paths"])) == 15
+    assert len(operations(contract["paths"])) == 16

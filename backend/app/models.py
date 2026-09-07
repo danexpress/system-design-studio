@@ -20,6 +20,10 @@ class ApiModel(BaseModel):
     )
 
 
+class HealthResponse(ApiModel):
+    status: str
+
+
 class SessionStatus(StrEnum):
     SCHEDULED = "scheduled"
     LIVE = "live"

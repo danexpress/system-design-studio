@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: GitHub Actions OIDC identity and deployment role for System Design Studio.
+
+Parameters:
+  GitHubOrganization:
+    Type: String
+    Default: danexpress
+  GitHubRepository:
+    Type: String
+    Default: system-design-studio
+  GitHubBranch:
+    Type: String
+    Default: main
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      Tags:
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  GitHubDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: Deploy System Design Studio from GitHub Actions via OIDC
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrganization}/${GitHubRepository}:ref:refs/heads/${GitHubBranch}
+      Policies:
+        - PolicyName: CloudFormationApplicationDeployment
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:DescribeStacks
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:ListStackResources
+                  - cloudformation:UpdateStack
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ec2:AuthorizeSecurityGroupIngress
+                  - ec2:CreateInternetGateway
+                  - ec2:CreateRoute
+                  - ec2:CreateRouteTable
+                  - ec2:CreateSecurityGroup
+                  - ec2:CreateSubnet
+                  - ec2:CreateTags
+                  - ec2:CreateVpc
+                  - ec2:Describe*
+                  - ec2:ModifySubnetAttribute
+                  - ec2:ModifyVpcAttribute
+                  - ec2:RevokeSecurityGroupIngress
+                  - ec2:AssociateRouteTable
+                  - ec2:AttachInternetGateway
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:CompleteLayerUpload
+                  - ecr:CreateRepository
+                  - ecr:DescribeRepositories
+                  - ecr:GetAuthorizationToken
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:InitiateLayerUpload
+                  - ecr:ListTagsForResource
+                  - ecr:PutImage
+                  - ecr:PutImageScanningConfiguration
+                  - ecr:PutLifecyclePolicy
+                  - ecr:TagResource
+                  - ecr:UploadLayerPart
+                  - ecs:CreateCluster
+                  - ecs:CreateService
+                  - ecs:DescribeClusters
+                  - ecs:DescribeServices
+                  - ecs:DescribeTaskDefinition
+                  - ecs:ListServices
+                  - ecs:ListTagsForResource
+                  - ecs:RegisterTaskDefinition
+                  - ecs:TagResource
+                  - ecs:UpdateService
+                  - elasticloadbalancing:AddTags
+                  - elasticloadbalancing:CreateListener
+                  - elasticloadbalancing:CreateLoadBalancer
+                  - elasticloadbalancing:CreateTargetGroup
+                  - elasticloadbalancing:Describe*
+                  - elasticloadbalancing:ModifyTargetGroup
+                  - iam:CreateRole
+                  - iam:DeleteRolePolicy
+                  - iam:GetRole
+                  - iam:GetRolePolicy
+                  - iam:ListRolePolicies
+                  - iam:ListRoles
+                  - iam:ListRoleTags
+                  - iam:PassRole
+                  - iam:PutRolePolicy
+                  - iam:TagRole
+                  - logs:CreateLogGroup
+                  - logs:DescribeLogGroups
+                  - logs:ListTagsForResource
+                  - logs:PutRetentionPolicy
+                  - logs:TagResource
+                  - rds:AddTagsToResource
+                  - rds:CreateDBInstance
+                  - rds:CreateDBSubnetGroup
+                  - rds:Describe*
+                  - rds:ListTagsForResource
+                  - secretsmanager:CreateSecret
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:GetRandomPassword
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:PutResourcePolicy
+                  - secretsmanager:TagResource
+                Resource: "*"
+
+Outputs:
+  RoleArn:
+    Description: Set this as the GitHub Actions AWS_DEPLOY_ROLE_ARN repository variable.
+    Value: !GetAtt GitHubDeployRole.Arn

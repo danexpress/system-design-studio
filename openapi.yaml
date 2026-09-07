@@ -15,6 +15,7 @@ servers:
   - url: /api
 
 tags:
+  - name: Health
   - name: Authentication
   - name: Sessions
   - name: Invitations
@@ -24,6 +25,27 @@ tags:
   - name: Realtime
 
 paths:
+  /health:
+    get:
+      tags: [Health]
+      operationId: health
+      summary: Check application health
+      description: Public endpoint used by container, load balancer, and deployment checks.
+      security: []
+      responses:
+        "200":
+          description: The application process is ready to serve requests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: The application cannot connect to its database.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /auth/token:
     post:
       tags: [Authentication]
@@ -514,6 +536,15 @@ components:
             $ref: "#/components/schemas/Error"
 
   schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: ok
+
     LoginInput:
       type: object
       additionalProperties: false

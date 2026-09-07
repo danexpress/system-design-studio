@@ -283,7 +283,7 @@ Resources:
           HealthCheck:
             Command:
               - CMD-SHELL
-              - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/openapi.json', timeout=2)" || exit 1
+              - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)" || exit 1
             Interval: 30
             Retries: 3
             StartPeriod: 30
@@ -309,7 +309,7 @@ Resources:
     Properties:
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
-      HealthCheckPath: /api/openapi.json
+      HealthCheckPath: /api/health
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
       Matcher:
