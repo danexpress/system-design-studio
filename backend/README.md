@@ -59,6 +59,18 @@ make docker-run
 Open `http://localhost:8000`. The named Docker volume preserves the SQLite
 database between container runs.
 
+To run the app with PostgreSQL, use the Compose stack:
+
+```sh
+make compose-up
+make compose-logs
+```
+
+Open `http://localhost:8000`, then stop the services with `make compose-down`.
+The `postgres-data` volume preserves database records. `POSTGRES_DB`,
+`POSTGRES_USER`, `POSTGRES_PASSWORD`, `JWT_SECRET`, and `PORT` can be overridden
+through environment variables or a root `.env` file.
+
 The seeded development accounts are:
 
 - Interviewer: `interviewer@example.com` / `interviewer-password`

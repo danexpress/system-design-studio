@@ -7,7 +7,7 @@ HOST ?= 127.0.0.1
 PORT ?= 8000
 DATABASE_URL ?= sqlite:////data/system_design_studio.db
 
-.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check docker-build docker-run
+.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check docker-build docker-run compose-up compose-down compose-logs
 
 help:
 	@printf '%s\n' \
@@ -20,6 +20,9 @@ help:
 		'make frontend-build Build the production frontend' \
 		'make docker-build Build the full-stack container image' \
 		'make docker-run Run the full-stack container on PORT' \
+		'make compose-up Start the app and PostgreSQL' \
+		'make compose-down Stop the Compose stack' \
+		'make compose-logs Follow Compose service logs' \
 		'make format  Format backend Python code' \
 		'make lint    Check backend formatting and lint rules' \
 		'make check   Run lint and tests'
@@ -51,6 +54,15 @@ docker-build:
 
 docker-run:
 	docker run --rm -p $(PORT):8000 -e DATABASE_URL="$(DATABASE_URL)" -v system-design-studio-data:/data system-design-studio
+
+compose-up:
+	docker compose up --build -d
+
+compose-down:
+	docker compose down
+
+compose-logs:
+	docker compose logs -f
 
 format:
 	cd $(BACKEND_DIR) && $(UV) run ruff format app tests
