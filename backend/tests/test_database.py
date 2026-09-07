@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 
-from app.database import SessionRecord, UserRecord
+from app.database import Database, SessionRecord, UserRecord, normalize_database_url
 from app.main import create_app
 
 
@@ -58,3 +58,19 @@ def test_data_persists_across_application_instances(tmp_path):
 
     assert response.status_code == 200
     assert response.json()["title"] == "Persistent interview"
+
+
+def test_postgres_urls_use_the_psycopg_3_dialect():
+    assert normalize_database_url("postgres://user:pass@db/studio") == (
+        "postgresql+psycopg://user:pass@db/studio"
+    )
+    assert normalize_database_url("postgresql://user:pass@db/studio") == (
+        "postgresql+psycopg://user:pass@db/studio"
+    )
+
+    database = Database("postgresql://user:pass@localhost/studio")
+    try:
+        assert database.engine.dialect.name == "postgresql"
+        assert database.engine.dialect.driver == "psycopg"
+    finally:
+        database.engine.dispose()

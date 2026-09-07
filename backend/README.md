@@ -21,8 +21,18 @@ DATABASE_URL=sqlite:///./local.db uv run uvicorn app.main:app --reload
 If the variable is omitted, the server uses
 `sqlite:///./system_design_studio.db`. Engine creation and persistence are
 isolated in `app/database.py`; the store and routers contain no SQLite-specific
-queries. A future PostgreSQL deployment can use a SQLAlchemy PostgreSQL URL once
-the corresponding database driver is installed.
+queries.
+
+PostgreSQL is supported through Psycopg 3:
+
+```sh
+DATABASE_URL=postgresql+psycopg://studio:password@localhost:5432/studio make run
+```
+
+The common `postgres://` and `postgresql://` URL forms supplied by hosting
+providers are normalized to the Psycopg 3 dialect automatically. The database
+must already exist; the backend creates its tables and seed records on first
+startup.
 
 Browser origins outside local development can be allowed with a comma-separated
 `CORS_ORIGINS` value. Localhost and `127.0.0.1` are accepted on any port by

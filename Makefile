@@ -5,6 +5,7 @@ BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 HOST ?= 127.0.0.1
 PORT ?= 8000
+DATABASE_URL ?= sqlite:////data/system_design_studio.db
 
 .PHONY: help sync run frontend dev test frontend-test frontend-build format lint check docker-build docker-run
 
@@ -49,7 +50,7 @@ docker-build:
 	docker build -t system-design-studio .
 
 docker-run:
-	docker run --rm -p $(PORT):8000 -v system-design-studio-data:/data system-design-studio
+	docker run --rm -p $(PORT):8000 -e DATABASE_URL="$(DATABASE_URL)" -v system-design-studio-data:/data system-design-studio
 
 format:
 	cd $(BACKEND_DIR) && $(UV) run ruff format app tests

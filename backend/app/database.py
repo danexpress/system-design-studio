@@ -13,6 +13,15 @@ from sqlalchemy.pool import StaticPool
 DEFAULT_DATABASE_URL = "sqlite:///./system_design_studio.db"
 
 
+def normalize_database_url(url: str) -> str:
+    """Select Psycopg 3 for common provider-style PostgreSQL URLs."""
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
+
+
 class Base(DeclarativeBase):
     pass
 
@@ -35,7 +44,9 @@ class UserRecord(Base):
 
 class Database:
     def __init__(self, url: str | None = None) -> None:
-        self.url = url or os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+        self.url = normalize_database_url(
+            url or os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+        )
         self.engine = self._create_engine(self.url)
         self.session_factory = sessionmaker(
             bind=self.engine,
