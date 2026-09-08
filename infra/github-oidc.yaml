@@ -97,6 +97,7 @@ Resources:
                   - ecs:DescribeClusters
                   - ecs:DescribeServices
                   - ecs:DescribeTaskDefinition
+                  - ecs:DeregisterTaskDefinition
                   - ecs:ListServices
                   - ecs:ListTagsForResource
                   - ecs:RegisterTaskDefinition
