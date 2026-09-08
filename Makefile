@@ -10,8 +10,10 @@ INTEGRATION_PORT ?= 18083
 INTEGRATION_COMPOSE_PROJECT ?= system-design-studio-integration
 E2E_PORT ?= 18084
 E2E_COMPOSE_PROJECT ?= system-design-studio-e2e
+AWS_DEV_STACK ?= system-design-studio
+AWS_PRODUCTION_STACK ?= system-design-studio-production
 
-.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check integration-test e2e-install e2e-test aws-deploy docker-build docker-run compose-up compose-down compose-logs
+.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check integration-test e2e-install e2e-test aws-deploy aws-deploy-dev aws-deploy-production docker-build docker-run compose-up compose-down compose-logs
 
 help:
 	@printf '%s\n' \
@@ -25,7 +27,8 @@ help:
 		'make integration-test Test the isolated Compose stack' \
 		'make e2e-install Install Playwright and Chromium' \
 		'make e2e-test Run browser tests against isolated Compose stack' \
-		'make aws-deploy Deploy the application to AWS with CloudFormation' \
+		'make aws-deploy-dev Deploy the development AWS environment' \
+		'make aws-deploy-production Deploy the production AWS environment' \
 		'make docker-build Build the full-stack container image' \
 		'make docker-run Run the full-stack container on PORT' \
 		'make compose-up Start the app and PostgreSQL' \
@@ -114,8 +117,13 @@ e2e-test:
 	cd e2e; \
 	E2E_BASE_URL="http://127.0.0.1:$(E2E_PORT)" npm test
 
-aws-deploy:
-	bash infra/deploy.sh
+aws-deploy: aws-deploy-dev
+
+aws-deploy-dev:
+	STACK_NAME="$(AWS_DEV_STACK)" DEPLOY_ENVIRONMENT=development bash infra/deploy.sh
+
+aws-deploy-production:
+	STACK_NAME="$(AWS_PRODUCTION_STACK)" DEPLOY_ENVIRONMENT=production bash infra/deploy.sh
 
 format:
 	cd $(BACKEND_DIR) && $(UV) run ruff format app tests integration_tests

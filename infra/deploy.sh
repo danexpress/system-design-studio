@@ -2,6 +2,7 @@
 set -euo pipefail
 
 stack_name="${STACK_NAME:-system-design-studio}"
+deployment_environment="${DEPLOY_ENVIRONMENT:-development}"
 aws_region="${AWS_REGION:-${AWS_DEFAULT_REGION:-us-west-2}}"
 template_file="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/cloudformation.yaml"
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,6 +20,7 @@ if [[ "$stack_exists" == false ]]; then
     --region "$aws_region" \
     --template-file "$template_file" \
     --capabilities CAPABILITY_IAM \
+    --tags Application=system-design-studio Environment="$deployment_environment" \
     --parameter-overrides \
       DesiredCount=0 \
       ImageUri=public.ecr.aws/docker/library/python:3.13-slim \
@@ -49,6 +51,7 @@ aws cloudformation deploy \
   --region "$aws_region" \
   --template-file "$template_file" \
   --capabilities CAPABILITY_IAM \
+  --tags Application=system-design-studio Environment="$deployment_environment" \
   --parameter-overrides \
     DesiredCount=1 \
     ImageUri="$image_uri" \

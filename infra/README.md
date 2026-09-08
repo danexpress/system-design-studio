@@ -5,21 +5,30 @@ Load Balancer and stores application data in a private RDS PostgreSQL instance.
 Container images are kept in ECR. Database and JWT secrets are generated in AWS
 Secrets Manager and injected into the task at runtime.
 
-Deploy using the configured AWS CLI account and region:
+Deploy either independent environment using the configured AWS CLI account and
+region:
 
 ```sh
-make aws-deploy
+make aws-deploy-dev
+make aws-deploy-production
 ```
 
-Defaults can be overridden:
+The default stacks are `system-design-studio` for development and
+`system-design-studio-production` for production. Each stack owns a separate
+VPC, load balancer, ECS service, ECR repository, RDS database, database secret,
+and JWT secret. Stack names can be overridden:
 
 ```sh
-AWS_REGION=us-west-2 STACK_NAME=system-design-studio make aws-deploy
+AWS_REGION=us-west-2 AWS_DEV_STACK=my-dev make aws-deploy-dev
+AWS_REGION=us-west-2 AWS_PRODUCTION_STACK=my-production make aws-deploy-production
 ```
 
 The script creates the stack with zero tasks on its first run, pushes the image
 to the newly created ECR repository, updates the service to one task, waits for
 ECS to stabilize, and prints the public URL.
+
+The GitHub Actions pipeline deploys only the development stack automatically.
+Production deployment is an explicit `make aws-deploy-production` operation.
 
 This stack creates billable resources, including an Application Load Balancer,
 an ECS Fargate task, RDS PostgreSQL, CloudWatch Logs, ECR, and Secrets Manager.
