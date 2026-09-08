@@ -13,7 +13,7 @@ E2E_COMPOSE_PROJECT ?= system-design-studio-e2e
 AWS_DEV_STACK ?= system-design-studio
 AWS_PRODUCTION_STACK ?= system-design-studio-production
 
-.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check integration-test e2e-install e2e-test aws-deploy aws-deploy-dev aws-deploy-production docker-build docker-run compose-up compose-down compose-logs
+.PHONY: help sync run frontend dev test frontend-test frontend-build format lint check integration-test e2e-install e2e-test aws-deploy aws-deploy-dev aws-deploy-production aws-promote-production docker-build docker-run compose-up compose-down compose-logs
 
 help:
 	@printf '%s\n' \
@@ -29,6 +29,7 @@ help:
 		'make e2e-test Run browser tests against isolated Compose stack' \
 		'make aws-deploy-dev Deploy the development AWS environment' \
 		'make aws-deploy-production Deploy the production AWS environment' \
+		'make aws-promote-production Promote the deployed dev image to production' \
 		'make docker-build Build the full-stack container image' \
 		'make docker-run Run the full-stack container on PORT' \
 		'make compose-up Start the app and PostgreSQL' \
@@ -124,6 +125,9 @@ aws-deploy-dev:
 
 aws-deploy-production:
 	STACK_NAME="$(AWS_PRODUCTION_STACK)" DEPLOY_ENVIRONMENT=production bash infra/deploy.sh
+
+aws-promote-production:
+	DEV_STACK_NAME="$(AWS_DEV_STACK)" PRODUCTION_STACK_NAME="$(AWS_PRODUCTION_STACK)" bash infra/promote.sh
 
 format:
 	cd $(BACKEND_DIR) && $(UV) run ruff format app tests integration_tests

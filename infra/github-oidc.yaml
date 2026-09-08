@@ -14,10 +14,6 @@ Parameters:
   GitHubRepositoryId:
     Type: String
     Default: "1357005655"
-  GitHubBranch:
-    Type: String
-    Default: main
-
 Resources:
   GitHubOidcProvider:
     Type: AWS::IAM::OIDCProvider
@@ -44,7 +40,9 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrganization}@${GitHubOrganizationId}/${GitHubRepository}@${GitHubRepositoryId}:ref:refs/heads/${GitHubBranch}
+                token.actions.githubusercontent.com:sub:
+                  - !Sub repo:${GitHubOrganization}@${GitHubOrganizationId}/${GitHubRepository}@${GitHubRepositoryId}:environment:development
+                  - !Sub repo:${GitHubOrganization}@${GitHubOrganizationId}/${GitHubRepository}@${GitHubRepositoryId}:environment:production
       Policies:
         - PolicyName: CloudFormationApplicationDeployment
           PolicyDocument:

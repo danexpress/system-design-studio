@@ -1,0 +1,46 @@
+name: Promote dev to production
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DEV_STACK_NAME: system-design-studio
+      PRODUCTION_STACK_NAME: system-design-studio-production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-west-2
+      - uses: docker/setup-buildx-action@v4
+      - name: Promote the running dev image
+        run: bash infra/promote.sh
+      - name: Validate production health
+        run: |
+          app_url="$(aws cloudformation describe-stacks \
+            --stack-name "$PRODUCTION_STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='ApplicationUrl'].OutputValue" \
+            --output text)"
+          for attempt in {1..30}; do
+            if response="$(curl --fail --silent --show-error "${app_url}/api/health")" && \
+              [[ "$response" == '{"status":"ok"}' ]]; then
+              echo "Production is healthy at ${app_url}"
+              exit 0
+            fi
+            echo "Health check attempt ${attempt}/30 failed; retrying..."
+            sleep 10
+          done
+          echo "Production health check failed at ${app_url}" >&2
+          exit 1

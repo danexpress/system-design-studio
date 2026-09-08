@@ -30,6 +30,20 @@ ECS to stabilize, and prints the public URL.
 The GitHub Actions pipeline deploys only the development stack automatically.
 Production deployment is an explicit `make aws-deploy-production` operation.
 
+## Promote development to production
+
+Run the **Promote dev to production** workflow manually from the GitHub Actions
+page on the `main` branch. It reads the image reference currently deployed by the
+development CloudFormation stack, copies that exact image into the independent
+production ECR repository without rebuilding, updates the production stack,
+waits for ECS stability, and checks `/api/health`.
+
+The same promotion can be run locally:
+
+```sh
+make aws-promote-production
+```
+
 This stack creates billable resources, including an Application Load Balancer,
 an ECS Fargate task, RDS PostgreSQL, CloudWatch Logs, ECR, and Secrets Manager.
 RDS snapshots and the ECR repository are retained if the stack is deleted.
@@ -52,7 +66,8 @@ role_arn="$(aws cloudformation describe-stacks \
 gh variable set AWS_DEPLOY_ROLE_ARN --body "$role_arn"
 ```
 
-The trust policy only accepts runs from the `main` branch of
-`danexpress/system-design-studio`. It includes GitHub's immutable organization
-and repository IDs because this organization uses a customized OIDC subject
-template. Pull requests run tests but cannot assume the deployment role.
+The trust policy accepts only the `development` and `production` GitHub
+environments in `danexpress/system-design-studio`. It includes GitHub's
+immutable organization and repository IDs because this organization uses a
+customized OIDC subject template. The jobs themselves only run from `main`;
+pull requests run tests but cannot assume the deployment role.
