@@ -34,7 +34,7 @@ registry="${production_repository%%/*}"
 aws ecr get-login-password --region "$aws_region" | \
   docker login --username AWS --password-stdin "$registry"
 
-echo "Promoting ${development_image} to ${production_image} without rebuilding..."
+echo "Pulling the currently deployed dev image into production as ${production_image}..."
 docker buildx imagetools create --tag "$production_image" "$development_image"
 
 aws cloudformation deploy \

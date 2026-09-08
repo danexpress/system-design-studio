@@ -5,13 +5,17 @@ Load Balancer and stores application data in a private RDS PostgreSQL instance.
 Container images are kept in ECR. Database and JWT secrets are generated in AWS
 Secrets Manager and injected into the task at runtime.
 
-Deploy either independent environment using the configured AWS CLI account and
-region:
+Build a development image, then deploy that already-published image as two
+separate operations:
 
 ```sh
-make aws-deploy-dev
-make aws-deploy-production
+image_uri="$(make --no-print-directory aws-build-dev)"
+make aws-deploy-dev IMAGE_URI="$image_uri"
 ```
+
+Images use UTC `YYYYMMDD-HHMMSS-shortsha` tags, for example
+`20260818-163457-83242da`. The deploy operation does not build an image: it
+updates CloudFormation and ECS pulls the supplied image from ECR.
 
 The default stacks are `system-design-studio` for development and
 `system-design-studio-production` for production. Each stack owns a separate
@@ -19,16 +23,18 @@ VPC, load balancer, ECS service, ECR repository, RDS database, database secret,
 and JWT secret. Stack names can be overridden:
 
 ```sh
-AWS_REGION=us-west-2 AWS_DEV_STACK=my-dev make aws-deploy-dev
-AWS_REGION=us-west-2 AWS_PRODUCTION_STACK=my-production make aws-deploy-production
+image_uri="$(AWS_REGION=us-west-2 AWS_DEV_STACK=my-dev make --no-print-directory aws-build-dev)"
+AWS_REGION=us-west-2 AWS_DEV_STACK=my-dev make aws-deploy-dev IMAGE_URI="$image_uri"
 ```
 
-The script creates the stack with zero tasks on its first run, pushes the image
-to the newly created ECR repository, updates the service to one task, waits for
-ECS to stabilize, and prints the public URL.
+The CI/CD workflow expresses these as independent **Build image** and **Deploy**
+jobs. The image URI is passed as a job output, so the deploy job serves exactly
+the artifact produced by the build job.
 
 The GitHub Actions pipeline deploys only the development stack automatically.
-Production deployment is an explicit `make aws-deploy-production` operation.
+Routine production releases use the manual promotion workflow below. A direct
+production deploy is available for recovery with
+`make aws-deploy-production IMAGE_URI=<existing-production-ecr-image>`.
 
 ## Promote development to production
 
